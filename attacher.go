@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"path/filepath"
 
 	"github.com/fsouza/go-dockerclient"
 )
@@ -46,6 +47,7 @@ func (m *AttachManager) attach(id string) {
 	container, err := m.client.InspectContainer(id)
 	assert(err, "attacher")
 	name := container.Name[1:]
+	log.Println("attaching to", name)
 	success := make(chan struct{})
 	failure := make(chan error)
 	outrd, outwr := io.Pipe()
@@ -72,6 +74,8 @@ func (m *AttachManager) attach(id string) {
 		m.Lock()
 		delete(m.attached, id)
 		m.Unlock()
+
+		log.Println("detached", name)
 	}()
 	_, ok := <-success
 	if ok {
@@ -128,11 +132,12 @@ func (m *AttachManager) Listen(source *Source, logstream chan *Log, closer <-cha
 	for {
 		select {
 		case event := <-events:
-			if event.Type == "attach" && (source.All() ||
-				(source.ID != "" && strings.HasPrefix(event.ID, source.ID)) ||
-				(source.Name != "" && event.Name == source.Name) ||
-				(source.Prefix != "" && strings.HasPrefix(event.Name, source.Prefix)) ||
-				(source.Filter != "" && strings.Contains(event.Name, source.Filter))) {
+			if event.Type == "attach" && !m.IsExcluded(source, event) &&
+				(source.All() ||
+					(source.ID != "" && strings.HasPrefix(event.ID, source.ID)) ||
+					(source.Name != "" && event.Name == source.Name) ||
+					(source.Prefix != "" && strings.HasPrefix(event.Name, source.Prefix)) ||
+					(source.Filter != "" && strings.Contains(event.Name, source.Filter))) {
 				pump := m.Get(event.ID)
 				pump.AddListener(logstream)
 				defer func() {
@@ -148,6 +153,21 @@ func (m *AttachManager) Listen(source *Source, logstream chan *Log, closer <-cha
 			return
 		}
 	}
+}
+
+func (m *AttachManager) IsExcluded(source *Source, event *AttachEvent) bool {
+	if len(source.Exclude) == 0 {
+		return false
+	}
+
+  for _, exclude := range source.Exclude {
+		match, _ := filepath.Match(exclude, event.Name)
+		if match {
+			return true
+		}
+	}
+
+	return false
 }
 
 type LogPump struct {

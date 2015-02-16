@@ -28,11 +28,12 @@ type Route struct {
 }
 
 type Source struct {
-	ID     string   `json:"id,omitempty"`
-	Name   string   `json:"name,omitempty"`
-    Prefix string   `json:"prefix,omitempty"`
-	Filter string   `json:"filter,omitempty"`
-	Types  []string `json:"types,omitempty"`
+    ID       string   `json:"id,omitempty"`
+    Name     string   `json:"name,omitempty"`
+    Prefix   string   `json:"prefix,omitempty"`
+    Filter   string   `json:"filter,omitempty"`
+    Types    []string `json:"types,omitempty"`
+    Exclude  []string `json:"exclude,omitempty"`
 }
 
 func (s *Source) All() bool {

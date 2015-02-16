@@ -207,10 +207,11 @@ func main() {
 				v, err := url.ParseQuery(u.RawQuery)
 				assert(err, "query")
 
-				if v.Get("filter") != "" || v.Get("types") != "" {
+				if v.Get("filter") != "" || v.Get("types") != "" || len(v["exclude"]) != 0 {
 					r.Source = &Source{
-						Filter: v.Get("filter"),
-						Types:  strings.Split(v.Get("types"), ","),
+						Filter:  v.Get("filter"),
+						Types:   strings.Split(v.Get("types"), ","),
+						Exclude: v["exclude"],
 					}
 				}
 
