@@ -8,12 +8,14 @@ dev:
 		-p 8000:8000 \
 		$(NAME):dev
 
-build:
+build: *.go
 	mkdir -p build
 	docker build -t $(NAME):$(VERSION) .
+
+save: build
 	docker save $(NAME):$(VERSION) | gzip -9 > build/$(NAME)_$(VERSION).tgz
 
-release: build
+release: save
 	rm -rf release && mkdir release
 	go get github.com/progrium/gh-release/...
 	cp build/* release
